@@ -10,7 +10,7 @@ int testBase64();
 int testChallenge1();
 
 int main() {
-	puts("In main");
+	puts("******** Challenge 1 Tests");
 	puts("Testing hex conversions");
 	int result = testHex();
 

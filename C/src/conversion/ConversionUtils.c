@@ -31,10 +31,8 @@ const unsigned char PADDING_BYTE = 0xFF;
 
 void hexToBinary(char* hexString, unsigned short length,
 		unsigned char* binaryOut) {
-
-	int i;
-	for (i = 0; i < length; i++) {
-		unsigned char c = *(hexString);
+	for (int i = 0; i < length; i++) {
+		char c = *(hexString);
 		hexString++;
 		if (c < 48 || c > 102 || (c > 57 && c < 65) || (c > 70 && c < 97)) {
 			return;
