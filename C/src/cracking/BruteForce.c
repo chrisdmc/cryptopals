@@ -1,15 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <CipherUtils.h>
+#include <string.h>
 #include <StringUtils.h>
-
-typedef struct KeyAndScore {
-	unsigned char key[8];
-	unsigned char keyLen;
-	unsigned char decodedText[65536];
-	unsigned short textLen;
-	double score;
-} keyScore;
+#include <BruteForce.h>
 
 void copyBytes(unsigned char *from, unsigned char *to, unsigned short len) {
 	for (unsigned short i = 0; i < len; i++) {
@@ -19,42 +12,42 @@ void copyBytes(unsigned char *from, unsigned char *to, unsigned short len) {
 	}
 }
 
-bool bruteForceKey(unsigned char keyLenBytes, unsigned char *encodedBytes,
-		unsigned char *decodedBytes, unsigned short messageLen,
-		unsigned char *foundKey) {
+keyScore *bruteForceKey(unsigned char keyLenBytes, unsigned char *encodedBytes,
+		unsigned short messageLen) {
 	if (keyLenBytes > 8) {
 		// Too big to brute force
-		return false;
+		return NULL;
 	}
 
 	unsigned char currKey[keyLenBytes];
+	memset(currKey, 0, keyLenBytes);
 
 	keyScore *best = NULL;
+	unsigned char decodedBytes[messageLen + 1];
+	memset(decodedBytes, 0, messageLen + 1);
 
 	int done = 0;
 	while (!done) {
+	    unsigned short currentMessageLen = messageLen;
 		unsigned char *encodedBytesTmp = encodedBytes;
-		unsigned char *decodedBytesTmp = decodedBytes;
 
-		for (unsigned short i = 0; i < messageLen; i++) {
-			*decodedBytesTmp = *encodedBytesTmp ^ currKey[i % keyLenBytes];
-			decodedBytesTmp++;
+		for (unsigned short i = 0; i < currentMessageLen; i++) {
+			decodedBytes[i] = *encodedBytesTmp ^ currKey[i % keyLenBytes];
 			encodedBytesTmp++;
 		}
 
 		// How do we know when we're done? First off, all the characters should be in the printable range.
-		if (allPrintableChars(decodedBytes, messageLen)) {
+		if (allPrintableChars(decodedBytes, currentMessageLen)) {
+		    trimWhiteSpace(decodedBytes, &currentMessageLen);
 			printf(
 					"Key %d generated string '%s' which has all printable chars\n",
 					currKey[0], decodedBytes);
 			// Second, get a score for the text based on character frequencies
-			double score = scoreEnglishText(decodedBytes, messageLen);
-			printf("String '%s' scored %f\n", decodedBytes, score);
+			double score = scoreEnglishText(decodedBytes, currentMessageLen);
 			keyScore *currentScore = (keyScore*) malloc(sizeof(keyScore));
+			copyBytes(encodedBytes, currentScore->encodedText, currentMessageLen);
 			copyBytes(currKey, currentScore->key, keyLenBytes);
-			currentScore->keyLen = keyLenBytes;
-			copyBytes(decodedBytes, currentScore->decodedText, messageLen);
-			currentScore->textLen = messageLen;
+			copyBytes(decodedBytes, currentScore->decodedText, currentMessageLen + 1);
 			currentScore->score = score;
 			if (best == NULL || currentScore->score < best->score) {
 				printf("New best = %p, score = %f, key = %d, text = '%s'\n",
@@ -76,17 +69,5 @@ bool bruteForceKey(unsigned char keyLenBytes, unsigned char *encodedBytes,
 		}
 	}
 
-	if (best != NULL) {
-		for (unsigned char i = 0; i < keyLenBytes; i++) {
-			*foundKey = best->key[i];
-			foundKey++;
-		}
-		for (unsigned short i = 0; i < messageLen; i++) {
-			*decodedBytes = best->decodedText[i];
-			decodedBytes++;
-		}
-		return true;
-	}
-
-	return false;
+	return best;
 }

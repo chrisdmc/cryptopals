@@ -19,7 +19,7 @@ int main() {
 	hexToBinary(expectedResult, 36, expectedResultBinary);
 
 	unsigned char actual[18];
-	xor(inputBinary, keyBinary, actual, 18);
+	xorFixedLength(inputBinary, keyBinary, actual, 18);
 
 	int result = 0;
 	for (int i = 0; i < 18; i++) {

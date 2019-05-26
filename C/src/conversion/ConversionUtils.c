@@ -236,6 +236,6 @@ char convertNumericToHexChar(unsigned char n) {
 	if (n < 10) {
 		return n + 48;
 	} else {
-		return n + 55;
+		return n + 87;
 	}
 }
