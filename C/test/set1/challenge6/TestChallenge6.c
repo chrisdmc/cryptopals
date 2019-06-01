@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <StringUtils.h>
+#include <ConversionUtils.h>
 #include <limits.h>
+#include <float.h>
 #include <stdlib.h>
 #include <string.h>
 
 int testHammingDistance();
+int findKeySize();
 
 int main() {
     puts("*********** Testing set 1 challenge 6");
@@ -13,6 +16,13 @@ int main() {
     if (error) {
         printf("Ruh-roh! Failed Hamming distance test (returned distance = %d)", error + 37);
         return 1;
+    }
+
+    int foundKeySize = findKeySize();
+    if (foundKeySize == -1) {
+        puts("Ruh-roh!");
+    } else {
+        printf("Found key size = %d\n", foundKeySize);
     }
 
     puts("All good :)");
@@ -27,36 +37,58 @@ int testHammingDistance() {
 }
 
 int findKeySize() {
-    long bestHammingDistance = LONG_MAX;
+    char foundKeySize = -1;
 
     FILE *testFile = fopen("/home/chris/Documents/git/cryptopals/C/test/set1/challenge6/6.txt", "r");
     char *testData = (char *)malloc(65536);
+    memset(testData, 0, 65536);
+
     char *position = testData;
     char buffer[256] = {0};
 
     while (fgets(buffer, 255, testFile) != NULL) {
         int lineLength = strlen(buffer);
+        if (buffer[lineLength-1] == 0x0A) {
+            // Trim new line
+            buffer[--lineLength] = 0x0;
+        }
         memcpy(position, buffer, lineLength);
         position += lineLength;
     }
 
-    position = testData;
-    char keySize = 2;
-    for (; keySize < 41; keySize++) {
-        char blocks[4][keySize + 1];
-        memset(blocks, 0, 4*(keySize) + 1);
-        for (char i = 0; i < 4; i++) {
-            memcpy(blocks[i], position, keySize);
-            blocks[i][keySize] = 0;
+    int docLength = position - testData;
+    if (docLength % 4 != 0) {
+        return foundKeySize;
+    }
+
+    unsigned char decodedBytes[(docLength/4)*3];
+    base64ToBinary(testData, docLength, decodedBytes);
+
+    unsigned char *bytePosition = decodedBytes;
+    double bestHammingDistance = DBL_MAX;
+    for (char keySize = 2; keySize < 41; keySize++) {
+        unsigned char blocks[4][keySize + 1];
+        memset(blocks, 0, 4*(keySize + 1));
+        for (unsigned char i = 0; i < 4; i++) {
+            memcpy(blocks[i], bytePosition + i*keySize, keySize);
         }
 
-        long ham = 0;
-        for (char i = 0; i < 4; i++) {
+        double ham = 0.0;
+        ham += getHammingSameLength(blocks[0], blocks[1], keySize) / (double)keySize;
+        ham += getHammingSameLength(blocks[0], blocks[2], keySize) / (double)keySize;
+        ham += getHammingSameLength(blocks[0], blocks[3], keySize) / (double)keySize;
+        ham += getHammingSameLength(blocks[1], blocks[2], keySize) / (double)keySize;
+        ham += getHammingSameLength(blocks[1], blocks[3], keySize) / (double)keySize;
+        ham += getHammingSameLength(blocks[2], blocks[3], keySize) / (double)keySize;
+        ham /= 6;
 
+        if (ham < bestHammingDistance) {
+            bestHammingDistance = ham;
+            foundKeySize = keySize;
         }
     }
 
-    return keySize;
+    return (int)foundKeySize;
 }
 
 
