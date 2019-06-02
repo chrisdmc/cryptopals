@@ -13,3 +13,5 @@ void base64ToBinary(char* base64, unsigned short length,
 void hexToBase64(char* hex, unsigned short length, char* base64Out);
 
 void base64ToHex(char* base64, unsigned short length, char* hexOut);
+
+void transpose(unsigned char *from, unsigned char *to, int numBlocks, int blockLen);

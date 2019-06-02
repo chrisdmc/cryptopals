@@ -239,3 +239,12 @@ char convertNumericToHexChar(unsigned char n) {
 		return n + 87;
 	}
 }
+
+void transpose(unsigned char *from, unsigned char *to, int numBlocks, int blockLen) {
+    // When transposing n blocks of length l, the result is l blocks of length n
+    for (int i = 0; i < blockLen; i++) {
+        for (int j = 0; j < numBlocks; j++) {
+            *(to + (i*numBlocks) + j) = *(from + (j*blockLen) + i);
+        }
+    }
+}
